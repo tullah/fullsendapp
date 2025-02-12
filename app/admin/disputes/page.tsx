@@ -5,8 +5,9 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Database } from "@/types/supabase";
 import { DisputeReviewDialog } from "@/components/dispute-review-dialog";
 import { Clock, CheckCircle2, XCircle, Archive } from "lucide-react";
-import { ErrorBoundary } from "@/components/error-boundary";
+import { ErrorBoundary } from 'react-error-boundary';
 import { ErrorFallback } from "../../../components/error-fallback";
+
 
 type Dispute = Database["public"]["Tables"]["player_disputes"]["Row"];
 type Player = Database["public"]["Tables"]["players"]["Row"];
@@ -163,7 +164,9 @@ export default function DisputesPage() {
 
   return (
     <ErrorBoundary 
-      fallback={<ErrorFallback />}
+      FallbackComponent={({error, resetErrorBoundary}: {error: Error, resetErrorBoundary: () => void}) => (
+        <ErrorFallback error={error} resetErrorBoundary={resetErrorBoundary} />
+      )}
       onReset={() => {
         // Reset the state when the error boundary is reset
         setIsLoading(true);
