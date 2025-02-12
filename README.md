@@ -1,79 +1,71 @@
-# Ultimate Frisbee Player Rankings (MVP)
+# Ultimate Frisbee Player Rankings
 
-A responsive web application for managing Ultimate Frisbee player rankings.
+A comprehensive web application for managing and tracking Ultimate Frisbee player rankings, stats, and disputes. This platform enables the Ultimate Frisbee community to maintain transparent player ratings while upholding the Spirit of the Game.
 
-## Core Features (MVP)
+## Features
 
 ### Player Management
-- View player list
-- Search players
-- View player stats
+- View comprehensive player list with search and filtering
+- Detailed player profiles with stat breakdowns
+- Add new players with initial ratings
+- Real-time search functionality with URL persistence
+- Mobile-responsive player cards with rating visualizations
 
 ### Rating System
-- Speed (1-99)
-- Throwing (1-99)
-- Awareness (1-99)
-- Catching (1-99)
-- Defense (1-99)
-- Endurance (1-99)
-- Spirit of the Game (0-4)
+Each player is rated across seven key attributes:
+- Speed (1-99): Acceleration, sprint speed, and field coverage
+- Throwing (1-99): Accuracy, distance, and variety of throws
+- Awareness (1-99): Field sense, strategic positioning, and decision-making
+- Catching (1-99): Reliability, range, and aerial ability
+- Defense (1-99): Marking, positioning, and defensive reads
+- Endurance (1-99): Stamina and sustained performance
+- Spirit of the Game (0-4): Sportsmanship and fair play rating
 
-### Contest System
-- View pending contests
-- Admin review interface
-- Approve/Reject contests
-- Contest status tracking
+### Dispute System
+- Submit rating disputes with detailed justification
+- Propose new ratings for any player attribute
+- Admin review interface for dispute management
+- Dispute status tracking (Pending/Approved/Rejected)
+- Historical dispute records
 
-### Rating Labels
-- 1-20: Beginner
-- 21-40: Novice
-- 41-60: Intermediate
-- 61-80: Expert
-- 81-99: Elite
+### Rating Classifications
+**Skill Ratings (1-99)**
+- 1-20: Beginner - New to the sport
+- 21-40: Novice - Basic understanding and execution
+- 41-60: Intermediate - Consistent performance
+- 61-80: Expert - Advanced techniques and strategy
+- 81-99: Elite - Exceptional skill and mastery
 
-### Spirit Rating Labels
-0. Contentious – Frequently argues calls, lacks sportsmanship, and does not uphold the Spirit of the Game.
-1. Respectful – Acknowledges opponents, plays fair, but may still have minor disputes.
-2. Honorable – Competes with integrity, maintains fairness, and resolves conflicts amicably.
-3. Supportive – Encourages fair play, mediates conflicts, and uplifts teammates and opponents.
-4. Inspiring – Embodies the highest spirit; fosters a fun, respectful, and positive game environment.
+**Spirit Ratings (0-4)**
+0. Contentious: Poor sportsmanship, frequent disputes
+1. Respectful: Basic sportsmanship with occasional issues
+2. Honorable: Consistent fair play and conflict resolution
+3. Supportive: Promotes positive game environment
+4. Inspiring: Exemplary spirit and leadership
 
-## Technical Stack (MVP)
+## Technical Implementation
 
-### Core
-- Next.js 15.1.7
-- TypeScript
-- App Router
+### Frontend
+- Next.js 14 with App Router
+- TypeScript for type safety
+- Tailwind CSS for styling
+- Custom UI components with Google Material Design influence
+- Responsive design with mobile-first approach
+- Client-side form validation
+- Error boundary implementation
+- Loading states and optimistic updates
 
-### UI
-- Tailwind CSS
-- Shadcn/ui
-- Next-themes (dark mode)
-
-### Backend
-- Supabase
-  - Authentication
-  - Database
-  - Row Level Security
+### Backend & Database
+- Supabase for backend services
+  - PostgreSQL database
+  - Row Level Security (RLS)
   - Real-time subscriptions
+  - Authentication and authorization
+  - Secure API endpoints
 
-## Responsive Design
+### Database Schema
 
-### Mobile
-- Single column layout
-- Hamburger menu
-- Full-width cards
-- Touch-friendly inputs
-
-### Tablet/Desktop
-- Multi-column layout
-- Horizontal navigation
-- Grid layouts
-- Keyboard-optimized inputs
-
-## Database Schema (MVP)
-
-### Players
+#### Players Table
 - id (primary key)
 - name
 - speed (1-99)
@@ -121,3 +113,26 @@ A responsive web application for managing Ultimate Frisbee player rankings.
 - Contest history
 - Analytics dashboard
 - API endpoints for external integrations
+
+## Development Practices
+- Type-safe development with TypeScript
+- Component-based architecture
+- CSS-in-JS with Tailwind
+- Version control with Git
+- Continuous deployment
+- Error boundary implementation
+- Performance optimization
+
+## Getting Started
+
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Set up Supabase environment variables
+4. Run development server: `npm run dev`
+5. Access the application at `localhost:3000`
+
+## Contributing
+Contributions are welcome! Please read our contributing guidelines and submit pull requests for any enhancements.
+
+## License
+This project is licensed under the MIT License - see the LICENSE file for details.
