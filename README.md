@@ -66,35 +66,39 @@ Each player is rated across seven key attributes:
 ### Database Schema
 
 #### Players Table
-- id (primary key)
-- name
-- speed (1-99)
-- throwing (1-99)
-- awareness (1-99)
-- catching (1-99)
-- defense (1-99)
-- endurance (1-99)
-- spirit (0-4)
-- created_at
+```sql
+CREATE TABLE players (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name VARCHAR(255) NOT NULL,
+  speed INTEGER CHECK (speed BETWEEN 1 AND 99),
+  throwing INTEGER CHECK (throwing BETWEEN 1 AND 99),
+  awareness INTEGER CHECK (awareness BETWEEN 1 AND 99),
+  catching INTEGER CHECK (catching BETWEEN 1 AND 99),
+  defense INTEGER CHECK (defense BETWEEN 1 AND 99),
+  endurance INTEGER CHECK (endurance BETWEEN 1 AND 99),
+  spirit INTEGER CHECK (spirit BETWEEN 0 AND 4),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+```
 
 #### Disputes Table
 ```sql
-disputes (
-  id: uuid primary key
-  player_id: uuid foreign key
-  status: string (pending/approved/rejected)
-  reason: text
-  current_rating: json
-  proposed_speed: number
-  proposed_throwing: number
-  proposed_awareness: number
-  proposed_catching: number
-  proposed_defense: number
-  proposed_endurance: number
-  proposed_spirit: number
-  resolution_notes: text
-  created_at: timestamp
-)
+CREATE TABLE disputes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  player_id UUID REFERENCES players(id),
+  status VARCHAR(20) CHECK (status IN ('pending', 'approved', 'rejected')),
+  reason TEXT NOT NULL,
+  current_rating JSONB,
+  proposed_speed INTEGER CHECK (proposed_speed BETWEEN 1 AND 99),
+  proposed_throwing INTEGER CHECK (proposed_throwing BETWEEN 1 AND 99),
+  proposed_awareness INTEGER CHECK (proposed_awareness BETWEEN 1 AND 99),
+  proposed_catching INTEGER CHECK (proposed_catching BETWEEN 1 AND 99),
+  proposed_defense INTEGER CHECK (proposed_defense BETWEEN 1 AND 99),
+  proposed_endurance INTEGER CHECK (proposed_endurance BETWEEN 1 AND 99),
+  proposed_spirit INTEGER CHECK (proposed_spirit BETWEEN 0 AND 4),
+  resolution_notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
 ```
 
 ## MVP Pages
