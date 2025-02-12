@@ -2,20 +2,84 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #ffffff;
+    --foreground: #3c4043;
+    --border: #dadce0;
+    --input: #f1f3f4;
+    --ring: #1a73e8;
+    --radius: 0.5rem;
+    --primary: #1a73e8;
+    --primary-foreground: #ffffff;
+    --secondary: #f8f9fa;
+    --secondary-foreground: #3c4043;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased min-h-screen;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .input-base {
+    @apply w-full px-4 py-2.5 border rounded-full bg-input
+           focus:outline-none focus:ring-2 focus:ring-[#1a73e8]/[0.3]
+           hover:bg-white hover:shadow-sm transition-all;
+  }
+
+  .select-base {
+    @apply input-base appearance-none cursor-pointer pr-10;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+  }
+
+  .button-base {
+    @apply px-6 py-2 rounded-full font-medium text-sm
+           transition-all duration-200 ease-in-out
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .button-primary {
+    @apply button-base bg-primary text-white
+           hover:bg-[#1a73e8]/[0.9] hover:shadow-md
+           active:bg-[#1a73e8]/[0.8];
+  }
+
+  .button-secondary {
+    @apply button-base bg-white text-primary border border-[#1a73e8]/[0.3]
+           hover:bg-[#1a73e8]/[0.05] hover:border-[#1a73e8]/[0.5];
+  }
+
+  .card-base {
+    @apply bg-white rounded-lg border border-[#dadce0]/[0.5]
+           hover:shadow-lg hover:border-[#1a73e8]/[0.2]
+           transition-all duration-200;
+  }
 }
+
+/* Custom scrollbar */
+@media (min-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-secondary;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-[#1a73e8]/[0.2];
+  }
+} 
