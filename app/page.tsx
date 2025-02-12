@@ -8,10 +8,10 @@ export default function Home() {
         {/* Centered Header */}
         <div className="text-center mb-12">
           <h1 className="text-3xl sm:text-4xl font-medium text-foreground mb-3">
-            Ultimate Frisbee Rankings
+            FullSend Rankings
           </h1>
           <p className="text-base sm:text-lg text-foreground/60 max-w-2xl mx-auto">
-            Track and analyze player performance with comprehensive statistics and ratings.
+            Track and analyze Ultimate Frisbee player performance with comprehensive statistics and ratings.
           </p>
         </div>
 

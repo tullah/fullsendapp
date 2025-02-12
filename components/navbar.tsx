@@ -9,7 +9,6 @@ import { useState } from "react";
 const navItems = [
   { label: "Home", href: "/" },
   { label: "Players", href: "/players" },
-  { label: "Contest Review", href: "/admin/contests" },
   { label: "Disputes Review", href: "/admin/disputes" },
 ];
 
@@ -27,7 +26,7 @@ export function Navbar() {
               href="/"
               className="flex items-center gap-2 font-medium hover:text-primary transition-colors"
             >
-              🥏 Ultimate Rankings
+              🥏 FullSend
             </Link>
           </div>
 
