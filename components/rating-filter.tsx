@@ -17,7 +17,7 @@ export function RatingFilter() {
   const { replace } = useRouter();
 
   const handleFilterChange = (range: string) => {
-    const params = new URLSearchParams(searchParams);
+    const params = new URLSearchParams(searchParams.toString());
     if (range) {
       params.set('rating', range);
     } else {
