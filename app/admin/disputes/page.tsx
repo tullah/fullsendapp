@@ -163,7 +163,7 @@ export default function DisputesPage() {
 
   return (
     <ErrorBoundary 
-      FallbackRender={ErrorFallback}
+      fallback={<ErrorFallback />}
       onReset={() => {
         // Reset the state when the error boundary is reset
         setIsLoading(true);

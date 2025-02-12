@@ -77,13 +77,25 @@ Each player is rated across seven key attributes:
 - spirit (0-4)
 - created_at
 
-### Contests
-- id (primary key)
-- player_id (foreign key)
-- proposed_stats (json)
-- contest_notes
-- contest_status (pending/approved/rejected)
-- submitted_at
+#### Disputes Table
+```sql
+disputes (
+  id: uuid primary key
+  player_id: uuid foreign key
+  status: string (pending/approved/rejected)
+  reason: text
+  current_rating: json
+  proposed_speed: number
+  proposed_throwing: number
+  proposed_awareness: number
+  proposed_catching: number
+  proposed_defense: number
+  proposed_endurance: number
+  proposed_spirit: number
+  resolution_notes: text
+  created_at: timestamp
+)
+```
 
 ## MVP Pages
 
