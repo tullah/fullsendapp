@@ -1,10 +1,20 @@
+interface TeamPlayer {
+  player_name: string;
+  team: 1 | 2;
+  overall_rating: number;
+}
+
+interface TeamData {
+  teams: TeamPlayer[];
+}
+
 interface JsonViewerProps {
-  data: any;
+  data: TeamData;
 }
 
 export function JsonViewer({ data }: JsonViewerProps) {
   return (
-    <div className="mt-6 p-6 rounded-lg bg-gray-50 border border-gray-200">
+    <div className="mt-6 p-6 rounded-lg bg-white border border-gray-200">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-medium text-gray-700">AI Response</h3>
         <div className="text-xs text-gray-500">
@@ -14,7 +24,7 @@ export function JsonViewer({ data }: JsonViewerProps) {
       
       <div className="grid gap-4 md:grid-cols-2">
         {[1, 2].map(teamNum => {
-          const teamPlayers = data.teams.filter(p => p.team === teamNum);
+          const teamPlayers = data.teams.filter((p: TeamPlayer) => p.team === teamNum);
           const avgRating = Math.round(
             teamPlayers.reduce((sum, p) => sum + p.overall_rating, 0) / teamPlayers.length
           );
