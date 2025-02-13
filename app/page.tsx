@@ -142,7 +142,7 @@ export default function Home() {
                   "Team captain or peer feedback",
                   "Any relevant game experience",
                 ].map((item, i) => (
-                  <li className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
+                  <li key={i} className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
                     <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#34a853]/10 flex items-center justify-center text-[#34a853]">
                       ✓
                     </div>
@@ -163,7 +163,7 @@ export default function Home() {
                   "Spirit bonus can be earned",
                   "All game levels considered",
                 ].map((item, i) => (
-                  <li className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
+                  <li key={i} className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm">
                     <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#fbbc04]/10 flex items-center justify-center text-[#fbbc04]">
                       ✓
                     </div>
