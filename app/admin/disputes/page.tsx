@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Database } from "@/types/supabase";
 import { DisputeReviewDialog } from "@/components/dispute-review-dialog";
-import { Clock, CheckCircle2, XCircle, Archive } from "lucide-react";
+import { Clock, CheckCircle2, XCircle, Archive, Lock, AlertCircle } from "lucide-react";
 import { ErrorBoundary } from 'react-error-boundary';
 import { ErrorFallback } from "../../../components/error-fallback";
 
@@ -17,6 +17,9 @@ interface DisputeWithPlayer extends Dispute {
 }
 
 export default function DisputesPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [disputes, setDisputes] = useState<{
     pending: DisputeWithPlayer[];
     approved: DisputeWithPlayer[];
@@ -30,41 +33,44 @@ export default function DisputesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const supabase = createClientComponentClient<Database>();
 
-  const fetchDisputes = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('player_disputes')
-        .select(`
-          *,
-          players (*)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      // Organize disputes by status
-      setDisputes({
-        pending: (data as DisputeWithPlayer[]).filter(d => d.status === 'pending'),
-        approved: (data as DisputeWithPlayer[]).filter(d => d.status === 'approved'),
-        rejected: (data as DisputeWithPlayer[]).filter(d => d.status === 'rejected')
-      });
-    } catch (err) {
-      console.error('Error fetching disputes:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // Reset auth state on mount and route changes
   useEffect(() => {
+    setIsAuthenticated(false);
+    setPassword("");
+    setError("");
+  }, []);
+
+  // Fetch disputes data
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
     let isSubscribed = true;
     
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        await fetchDisputes();
-      } catch (error) {
+        const { data, error } = await supabase
+          .from('player_disputes')
+          .select(`
+            *,
+            players (*)
+          `)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
         if (!isSubscribed) return;
-        console.error('Error:', error);
+
+        setDisputes({
+          pending: (data as DisputeWithPlayer[]).filter(d => d.status === 'pending'),
+          approved: (data as DisputeWithPlayer[]).filter(d => d.status === 'approved'),
+          rejected: (data as DisputeWithPlayer[]).filter(d => d.status === 'rejected')
+        });
+      } catch (err) {
+        console.error('Error:', err);
+      } finally {
+        if (isSubscribed) {
+          setIsLoading(false);
+        }
       }
     };
 
@@ -73,7 +79,94 @@ export default function DisputesPage() {
     return () => {
       isSubscribed = false;
     };
-  }, []);
+  }, [supabase, isAuthenticated]);
+
+  const fetchDisputes = async () => {
+    const { data, error } = await supabase
+      .from('player_disputes')
+      .select(`
+        *,
+        players (*)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    setDisputes({
+      pending: (data as DisputeWithPlayer[]).filter(d => d.status === 'pending'),
+      approved: (data as DisputeWithPlayer[]).filter(d => d.status === 'approved'),
+      rejected: (data as DisputeWithPlayer[]).filter(d => d.status === 'rejected')
+    });
+    setIsLoading(false);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password === "abc123") {
+      setIsAuthenticated(true);
+      setError("");
+    } else {
+      setError("Incorrect password");
+      setPassword("");
+    }
+  };
+
+  // Show password screen if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="flex justify-center mb-6">
+              <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center">
+                <Lock className="w-6 h-6 text-blue-500" />
+              </div>
+            </div>
+            
+            <h1 className="text-xl font-medium text-center mb-6">
+              Review Disputes
+            </h1>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label 
+                  htmlFor="password" 
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoFocus
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg 
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter password"
+                />
+              </div>
+
+              {error && (
+                <div className="text-sm text-red-600 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" />
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg
+                         hover:bg-blue-600 transition-colors duration-200"
+              >
+                Access Disputes
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
