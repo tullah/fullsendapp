@@ -219,17 +219,20 @@ function AIPageContent() {
 
   const generateTeams = async () => {
     try {
-      checkRateLimit();
       setIsGenerating(true);
       setError(null);
       setAiResponse('');
 
-      // Format the prompt with selected players
-      const formattedPrompt = `Create balanced teams from these players:
+      // Format the prompt with selected players and requirements
+      const formattedPrompt = `Create balanced teams from these ${selectedPlayers.length} players:
 
 ${promptString}
 
-Consider their attributes when forming teams. Ensure teams are competitive based on overall ratings and skill distribution.`;
+Requirements:
+- Create ${selectedPlayers.length % 2 === 0 ? 'two equal teams' : 'balanced teams (one team may have an extra player)'}
+- Balance skill levels across teams
+- Consider player attributes for team roles
+- Ensure overall team ratings are similar`;
 
       const response = await fetch('/api/generate-teams', {
         method: 'POST',
@@ -243,7 +246,7 @@ Consider their attributes when forming teams. Ensure teams are competitive based
         throw new Error(data.error || 'Failed to generate teams');
       }
 
-      // Validate that all selected players are included
+      // Validate response
       const responsePlayerNames = new Set(data.teams.map((p: any) => p.player_name));
       const selectedPlayerNames = new Set(selectedPlayers.map(p => p.name));
 
@@ -256,11 +259,6 @@ Consider their attributes when forming teams. Ensure teams are competitive based
       if (data.teams) {
         setTeamAssignments(data.teams);
       }
-
-      // Update rate limiting
-      setRequestCount(prev => prev + 1);
-      setDailyRequestCount(prev => prev + 1);
-      setLastRequestTime(Date.now());
 
     } catch (err) {
       console.error('Error generating teams:', err);
@@ -360,8 +358,7 @@ Consider their attributes when forming teams. Ensure teams are competitive based
           {/* Selected Players Counter and Clear All */}
           {selectedPlayers.length > 0 && (
             <div className="mb-4 space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center 
-                            justify-between gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex flex-col sm:flex-row gap-3">
                   {/* Player counter */}
                   <div className="flex items-center gap-2">
@@ -394,11 +391,13 @@ Consider their attributes when forming teams. Ensure teams are competitive based
                 
                 <button
                   onClick={clearAllPlayers}
-                  className="text-xs font-medium text-red-500 hover:text-red-600 
-                           px-3 py-1.5 rounded-lg hover:bg-red-50 
-                           transition-colors duration-200 whitespace-nowrap"
+                  className="flex items-center justify-center gap-2 text-xs font-medium 
+                           bg-red-50 text-red-600 hover:bg-red-100
+                           px-4 py-2 rounded-lg transition-all duration-200
+                           hover:shadow-sm hover:-translate-y-0.5"
                 >
-                  Clear All
+                  <X className="w-3.5 h-3.5" />
+                  Clear All Players
                 </button>
               </div>
 
@@ -425,66 +424,54 @@ Consider their attributes when forming teams. Ensure teams are competitive based
 
           {/* Player List */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {filteredPlayers.map(player => {
-              const isSelected = selectedPlayers.some(p => p.id === player.id);
-              const rating = calculateOverallRating(player);
-              
-              return (
-                <button
-                  key={player.id}
-                  onClick={() => !isSelected && addPlayer(player)}
-                  disabled={isSelected}
-                  className={`group flex items-center gap-3 p-3 rounded-lg text-left transition-all
-                            ${isSelected 
-                              ? 'bg-primary/[0.04] border border-primary/10' 
-                              : 'hover:bg-secondary/40 border border-transparent'}`}
-                >
-                  {/* Rating Circle */}
-                  <div 
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium
-                              ${isSelected 
-                                ? 'bg-primary/10 text-primary' 
-                                : 'bg-secondary text-foreground/60'}`}
+            {filteredPlayers
+              .filter(player => !selectedPlayers.some(p => p.id === player.id)) // Only show unselected players
+              .map(player => {
+                const rating = calculateOverallRating(player);
+                
+                return (
+                  <button
+                    key={player.id}
+                    onClick={() => addPlayer(player)}
+                    className="group flex items-center gap-3 p-3 rounded-lg text-left transition-all
+                              hover:bg-secondary/40 border border-transparent"
                   >
-                    {rating}
-                  </div>
-
-                  {/* Player Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm mb-1 truncate">
-                      {player.name}
+                    {/* Rating Circle */}
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium
+                                  bg-secondary text-foreground/60">
+                      {rating}
                     </div>
-                    <div className="flex flex-wrap gap-1">
-                      {[
-                        { label: 'S', value: player.speed },
-                        { label: 'T', value: player.throwing },
-                        { label: 'A', value: player.awareness },
-                        { label: 'C', value: player.catching },
-                        { label: 'D', value: player.defense },
-                        { label: 'E', value: player.endurance },
-                      ].map((stat, i) => (
-                        <div 
-                          key={i}
-                          className="text-[10px] px-1 rounded 
-                                   bg-secondary/40 text-foreground/60"
-                        >
-                          {stat.label}{stat.value}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
 
-                  {/* Add/Selected Indicator */}
-                  {!isSelected ? (
+                    {/* Player Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm mb-1 truncate">
+                        {player.name}
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {[
+                          { label: 'S', value: player.speed },
+                          { label: 'T', value: player.throwing },
+                          { label: 'A', value: player.awareness },
+                          { label: 'C', value: player.catching },
+                          { label: 'D', value: player.defense },
+                          { label: 'E', value: player.endurance },
+                        ].map((stat, i) => (
+                          <div 
+                            key={i}
+                            className="text-[10px] px-1 rounded 
+                                     bg-secondary/40 text-foreground/60"
+                          >
+                            {stat.label}{stat.value}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Add Icon */}
                     <Plus className="w-4 h-4 text-primary/40 group-hover:text-primary/60" />
-                  ) : (
-                    <div className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center">
-                      <div className="w-2 h-2 rounded-full bg-primary" />
-                    </div>
-                  )}
-                </button>
-              );
-            })}
+                  </button>
+                );
+              })}
           </div>
 
           {/* Generate Teams Button */}
@@ -503,38 +490,34 @@ Consider their attributes when forming teams. Ensure teams are competitive based
                   setError(null);
                   generateTeams();
                 }}
-                disabled={
-                  isGenerating || 
-                  requestCount >= RATE_LIMITS.REQUESTS_PER_MINUTE ||
-                  dailyRequestCount >= RATE_LIMITS.REQUESTS_PER_DAY ||
-                  currentTokenCount > RATE_LIMITS.TOKENS_PER_MINUTE
-                }
-                className="button-primary px-8 py-3 text-base disabled:opacity-50"
+                disabled={isGenerating}
+                className="relative inline-flex items-center justify-center group
+                           px-8 py-3 text-base font-medium
+                           bg-gradient-to-r from-blue-600 to-blue-500
+                           text-white rounded-xl
+                           transition-all duration-300
+                           hover:from-blue-500 hover:to-blue-400
+                           hover:shadow-lg hover:-translate-y-0.5
+                           disabled:opacity-50 disabled:hover:transform-none
+                           disabled:hover:shadow-none"
               >
+                <div className="absolute inset-0 bg-white/10 rounded-xl opacity-0 
+                              group-hover:opacity-100 transition-opacity duration-300" />
                 {isGenerating ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                    Generating Teams...
+                    <span>Generating Teams...</span>
                   </>
                 ) : (
                   <>
-                    Generate Teams
-                    <span className="ml-2 text-sm opacity-80">
-                      ({selectedPlayers.length} players)
+                    <Sparkles className="w-5 h-5 mr-2" />
+                    <span>Generate Teams</span>
+                    <span className="ml-2 text-sm bg-white/20 px-2 py-0.5 rounded-full">
+                      {selectedPlayers.length} players
                     </span>
                   </>
                 )}
               </button>
-              <RateLimiter 
-                isGenerating={isGenerating}
-                requestCount={requestCount}
-                dailyRequestCount={dailyRequestCount}
-                currentTokenCount={currentTokenCount}
-                dailyTokenCount={dailyTokenCount}
-              />
-              <div className="mt-2 text-xs text-foreground/60">
-                Teams will be balanced based on player ratings and chemistry
-              </div>
             </div>
           )}
 
@@ -571,6 +554,24 @@ Consider their attributes when forming teams. Ensure teams are competitive based
           {/* AI Response */}
           {aiResponse && (
             <div className="mx-4 space-y-4">
+              {/* Warnings (if any) */}
+              {JSON.parse(aiResponse).warnings?.length > 0 && (
+                <div className="p-4 sm:p-6 rounded-xl bg-yellow-50 border border-yellow-200">
+                  <div className="flex items-center gap-2 mb-3">
+                    <AlertCircle className="w-4 h-4 text-yellow-600" />
+                    <h3 className="text-sm font-medium text-yellow-700">Team Balance Warnings</h3>
+                  </div>
+                  <ul className="space-y-1">
+                    {JSON.parse(aiResponse).warnings.map((warning: string, i: number) => (
+                      <li key={i} className="text-xs text-yellow-600 flex items-center gap-2">
+                        <div className="w-1 h-1 rounded-full bg-yellow-400" />
+                        {warning}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {/* Teams Display */}
               <div className="p-4 sm:p-6 rounded-xl bg-white border border-gray-200 shadow-sm">
                 <div className="flex items-center gap-2 mb-4">
