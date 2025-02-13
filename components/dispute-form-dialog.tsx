@@ -7,6 +7,7 @@ import { Database } from "@/types/supabase";
 import { getRatingStyles } from "@/lib/ratings";
 import { SpiritRating } from "./spirit-rating";
 import { calculateOverallRating, getSpiritLabel } from "@/lib/utils";
+import { RatingScale } from "./rating-scale";
 
 interface DisputeFormDialogProps {
   player: Database["public"]["Tables"]["players"]["Row"];
@@ -183,6 +184,11 @@ export function DisputeFormDialog({ player, onClose, onDisputeSubmitted, isOpen 
                     {formErrors.reason}
                   </p>
                 )}
+              </div>
+
+              <div className="py-2">
+                <div className="text-xs sm:text-sm font-medium mb-2">Rating Scale</div>
+                <RatingScale />
               </div>
 
               <div className="space-y-2 sm:space-y-3">

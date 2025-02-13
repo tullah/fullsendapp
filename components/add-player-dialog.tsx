@@ -7,6 +7,7 @@ import { Database } from "@/types/supabase";
 import { getRatingStyles } from "@/lib/ratings";
 import { Tooltip } from "./tooltip";
 import { SpiritRating } from "./spirit-rating";
+import { RatingScale } from "./rating-scale";
 
 interface AddPlayerDialogProps {
   onPlayerAdded: () => void;
@@ -245,7 +246,7 @@ export function AddPlayerDialog({ onPlayerAdded, onClose, isOpen }: AddPlayerDia
                 </div>
               )}
 
-              {/* Compact name input */}
+              {/* Name input */}
               <div>
                 <label className="block text-xs sm:text-sm font-medium mb-1">
                   Name <span className="text-red-500">*</span>
@@ -267,6 +268,12 @@ export function AddPlayerDialog({ onPlayerAdded, onClose, isOpen }: AddPlayerDia
                     {formErrors.name}
                   </p>
                 )}
+              </div>
+
+              {/* Rating Scale */}
+              <div className="py-2">
+                <div className="text-xs sm:text-sm font-medium mb-2">Rating Scale</div>
+                <RatingScale />
               </div>
 
               {/* Compact skills grid */}
