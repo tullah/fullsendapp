@@ -113,6 +113,37 @@ export interface Database {
           // Add if needed
         };
       };
+      team_creation: {
+        Row: {
+          id: string;
+          player_id: string;
+          team_number: number | null;
+          created_at: string;
+          speed: number;
+          throwing: number;
+          awareness: number;
+          catching: number;
+          defense: number;
+          endurance: number;
+          spirit: number;
+        };
+        Insert: {
+          id?: string;
+          player_id: string;
+          team_number?: number | null;
+          created_at?: string;
+          speed: number;
+          throwing: number;
+          awareness: number;
+          catching: number;
+          defense: number;
+          endurance: number;
+          spirit: number;
+        };
+        Update: {
+          team_number?: number | null;
+        };
+      };
     };
     Views: {
       [_ in never]: never;

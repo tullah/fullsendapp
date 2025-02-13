@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { RatingSystem } from '@/components/rating-system';
+import { RatingScale } from '@/components/rating-scale';
 
 export default function Home() {
   return (
@@ -16,56 +17,63 @@ export default function Home() {
         </div>
 
         {/* Navigation Cards */}
-        <div className="grid gap-4 md:gap-6 md:grid-cols-2 mb-10">
-          <Link 
-            href="/players" 
-            className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-[#1a73e8]/5 via-[#4285f4]/5 to-[#34a853]/5 
-                     hover:shadow-lg transition-all duration-300 p-1"
-          >
-            <div className="relative p-5 sm:p-6 rounded-lg bg-white/80 backdrop-blur-sm">
-              <div className="flex items-start gap-4 mb-4">
-                <div className="w-12 h-12 rounded-xl bg-[#1a73e8]/10 flex items-center justify-center text-xl
-                             group-hover:scale-110 transition-transform duration-300">
-                  🏆
+        <div className="grid gap-4 md:gap-6 md:grid-cols-3 mb-10">
+          {[
+            {
+              title: "Player Rankings",
+              desc: "Explore comprehensive player statistics, performance metrics, and detailed rankings.",
+              icon: "🏆",
+              color: "#1a73e8",
+              href: "/players",
+              action: "View Rankings"
+            },
+            {
+              title: "FullSend.AI",
+              desc: "Generate balanced teams using AI-powered matchmaking.",
+              icon: "🤖",
+              color: "#fbbc04",
+              href: "/ai",
+              action: "Create Teams"
+            },
+            {
+              title: "Review Disputes",
+              desc: "Evaluate player rating disputes with our transparent, community-driven review process.",
+              icon: "⚖️",
+              color: "#34a853",
+              href: "/admin/disputes",
+              action: "Review Disputes"
+            }
+          ].map((card, i) => (
+            <Link 
+              key={i}
+              href={card.href} 
+              className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-[#1a73e8]/5 via-[#4285f4]/5 to-[#34a853]/5 
+                       hover:shadow-lg transition-all duration-300 p-1"
+            >
+              <div className="relative p-5 sm:p-6 rounded-lg bg-white/80 backdrop-blur-sm h-full flex flex-col">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-[#1a73e8]/10 flex items-center justify-center text-xl
+                               group-hover:scale-110 transition-transform duration-300"
+                    style={{ backgroundColor: `${card.color}10` }}
+                  >
+                    {card.icon}
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-xl sm:text-2xl font-medium mb-2" style={{ color: card.color }}>
+                      {card.title}
+                    </h2>
+                    <p className="text-sm sm:text-base text-foreground/60 leading-relaxed">
+                      {card.desc}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h2 className="text-xl sm:text-2xl font-medium text-[#1a73e8] mb-2">Player Rankings</h2>
-                  <p className="text-sm sm:text-base text-foreground/60 leading-relaxed">
-                    Explore comprehensive player statistics, performance metrics, and detailed rankings.
-                  </p>
+                <div className="mt-auto flex items-center gap-2 text-sm" style={{ color: `${card.color}CC` }}>
+                  <span className="font-medium">{card.action}</span>
+                  <span className="group-hover:translate-x-1 transition-transform">→</span>
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-sm text-[#1a73e8]/80">
-                <span className="font-medium">View Rankings</span>
-                <span className="group-hover:translate-x-1 transition-transform">→</span>
-              </div>
-            </div>
-          </Link>
-
-          <Link 
-            href="/admin/disputes" 
-            className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-[#34a853]/5 via-[#fbbc04]/5 to-[#ea4335]/5 
-                     hover:shadow-lg transition-all duration-300 p-1"
-          >
-            <div className="relative p-5 sm:p-6 rounded-lg bg-white/80 backdrop-blur-sm">
-              <div className="flex items-start gap-4 mb-4">
-                <div className="w-12 h-12 rounded-xl bg-[#34a853]/10 flex items-center justify-center text-xl
-                             group-hover:scale-110 transition-transform duration-300">
-                  ⚖️
-                </div>
-                <div className="flex-1">
-                  <h2 className="text-xl sm:text-2xl font-medium text-[#34a853] mb-2">Review Rating Disputes</h2>
-                  <p className="text-sm sm:text-base text-foreground/60 leading-relaxed">
-                    Evaluate player rating disputes with our transparent, community-driven review process.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-[#34a853]/80">
-                <span className="font-medium">Review Disputes</span>
-                <span className="group-hover:translate-x-1 transition-transform">→</span>
-              </div>
-            </div>
-          </Link>
+            </Link>
+          ))}
         </div>
 
         {/* Rating System Component */}
