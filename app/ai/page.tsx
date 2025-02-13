@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Bot, Users, Sparkles, ArrowRight, Search, Plus, X } from "lucide-react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Database } from "@/types/supabase";
@@ -10,7 +10,7 @@ import { calculateOverallRating } from "@/lib/utils";
 
 type Player = Database["public"]["Tables"]["players"]["Row"];
 
-export default function AIPage() {
+function AIPageContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [players, setPlayers] = useState<Player[]>([]);
   const [selectedPlayers, setSelectedPlayers] = useState<Player[]>([]);
@@ -328,5 +328,23 @@ export default function AIPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AIPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto p-4 sm:p-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="animate-pulse">
+            <div className="h-8 w-64 bg-gray-200 rounded mb-6"></div>
+            <div className="h-10 w-full bg-gray-200 rounded mb-6"></div>
+            {/* Add more loading skeleton elements as needed */}
+          </div>
+        </div>
+      </div>
+    }>
+      <AIPageContent />
+    </Suspense>
   );
 } 
