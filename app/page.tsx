@@ -11,7 +11,7 @@ export default function Home() {
             FullSend Rankings
           </h1>
           <p className="text-base sm:text-lg text-foreground/60 max-w-2xl mx-auto">
-            Track and analyze Ultimate Frisbee player performance with comprehensive statistics and ratings.
+            A comprehensive rating system for Ultimate Frisbee players.
           </p>
         </div>
 
