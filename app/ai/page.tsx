@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { Bot, Users, Sparkles, ArrowRight, Search, Plus, X, Loader2, AlertCircle } from "lucide-react";
+import { Bot, Users, Sparkles, ArrowRight, Search, Plus, X, Loader2, AlertCircle, Clock, Code } from "lucide-react";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Database } from "@/types/supabase";
 import { SearchInput } from "@/components/search-input";
 import { RatingFilter } from "@/components/rating-filter";
 import { calculateOverallRating } from "@/lib/utils";
+import { RateLimiter } from "@/components/rate-limiter";
+import { estimateTokens } from "@/lib/token-counter";
+import { JsonViewer } from "@/components/json-viewer";
 
 type Player = Database["public"]["Tables"]["players"]["Row"];
 
@@ -17,8 +20,10 @@ interface TeamAssignment {
   role: "Handler" | "Receiver" | "Utility";
 }
 
-interface TeamCreationWithPlayer {
-  player_id: string;
+interface TeamCreationPlayer {
+  players: {
+    name: string;
+  };
   speed: number;
   throwing: number;
   awareness: number;
@@ -26,10 +31,16 @@ interface TeamCreationWithPlayer {
   defense: number;
   endurance: number;
   spirit: number;
-  players: {
-    name: string;
-  };
 }
+
+// Update rate limits for GPT-4-mini
+const RATE_LIMITS = {
+  REQUESTS_PER_MINUTE: 3,
+  REQUESTS_PER_DAY: 200,
+  TOKENS_PER_MINUTE: 60000,
+  TOKENS_PER_DAY: 200000,
+  RESET_INTERVAL: 60000, // 1 minute in milliseconds
+};
 
 function AIPageContent() {
   const [isLoading, setIsLoading] = useState(true);
@@ -40,7 +51,18 @@ function AIPageContent() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [teamAssignments, setTeamAssignments] = useState<TeamAssignment[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [requestCount, setRequestCount] = useState(0);
+  const [lastRequestTime, setLastRequestTime] = useState(Date.now());
+  const [inputTokens, setInputTokens] = useState(0);
+  const [outputTokens, setOutputTokens] = useState(0);
+  const [currentTokenCount, setCurrentTokenCount] = useState(0);
+  const [promptString, setPromptString] = useState<string>('');
+  const [aiResponse, setAiResponse] = useState<string>('');
   const supabase = createClientComponentClient<Database>();
+
+  // Add daily tracking
+  const [dailyRequestCount, setDailyRequestCount] = useState(0);
+  const [dailyTokenCount, setDailyTokenCount] = useState(0);
 
   // Fetch all players
   useEffect(() => {
@@ -76,6 +98,21 @@ function AIPageContent() {
     return true;
   });
 
+  // Add this function to estimate tokens for a player
+  const estimatePlayerTokens = (player: TeamCreationPlayer) => {
+    const playerString = `${player.players.name}:
+     Speed: ${player.speed}
+     Throwing: ${player.throwing}
+     Awareness: ${player.awareness}
+     Catching: ${player.catching}
+     Defense: ${player.defense}
+     Endurance: ${player.endurance}
+     Spirit: ${player.spirit}`;
+    
+    return estimateTokens(playerString);
+  };
+
+  // Update addPlayer function
   const addPlayer = async (player: Player) => {
     if (selectedPlayers.length >= 30) {
       alert("Maximum 30 players allowed");
@@ -86,123 +123,133 @@ function AIPageContent() {
       return;
     }
 
-    // Add to team_creation table
-    const { error } = await supabase
-      .from('team_creation')
-      .insert([{
-        player_id: player.id,
-        speed: player.speed,
-        throwing: player.throwing,
-        awareness: player.awareness,
-        catching: player.catching,
-        defense: player.defense,
-        endurance: player.endurance,
-        spirit: player.spirit,
-      }]);
+    // Build player string
+    const playerString = `${player.name}
+    Speed: ${player.speed}
+    Throwing: ${player.throwing}
+    Awareness: ${player.awareness}
+    Catching: ${player.catching}
+    Defense: ${player.defense}
+    Endurance: ${player.endurance}
+    Spirit: ${player.spirit}
+    Overall: ${Math.round((player.speed + player.throwing + player.awareness + 
+              player.catching + player.defense + player.endurance) / 6 + player.spirit)}`;
 
-    if (error) {
-      console.error('Error adding player:', error);
+    // Check token limit
+    const newTokenCount = estimateTokens(promptString + playerString);
+    if (newTokenCount > RATE_LIMITS.TOKENS_PER_MINUTE) {
+      setError('Adding this player would exceed the token limit');
       return;
     }
 
     setSelectedPlayers([...selectedPlayers, player]);
+    setPromptString(prev => prev + (prev ? '\n\n' : '') + playerString);
+    setCurrentTokenCount(newTokenCount);
   };
 
+  // Update removePlayer function
   const removePlayer = async (playerId: string) => {
-    const { error } = await supabase
-      .from('team_creation')
-      .delete()
-      .eq('player_id', playerId);
+    const player = selectedPlayers.find(p => p.id === playerId);
+    if (!player) return;
 
-    if (error) {
-      console.error('Error removing player:', error);
-      return;
-    }
+    // Rebuild prompt string without this player
+    const updatedPlayers = selectedPlayers.filter(p => p.id !== playerId);
+    const newPromptString = updatedPlayers.map(p => 
+      `${p.name}
+    Speed: ${p.speed}
+    Throwing: ${p.throwing}
+    Awareness: ${p.awareness}
+    Catching: ${p.catching}
+    Defense: ${p.defense}
+    Endurance: ${p.endurance}
+    Spirit: ${p.spirit}
+    Overall: ${Math.round((p.speed + p.throwing + p.awareness + 
+              p.catching + p.defense + p.endurance) / 6 + p.spirit)}`
+    ).join('\n\n');
 
-    setSelectedPlayers(selectedPlayers.filter(p => p.id !== playerId));
+    setSelectedPlayers(updatedPlayers);
+    setPromptString(newPromptString);
+    setCurrentTokenCount(estimateTokens(newPromptString));
   };
 
-  const clearAllPlayers = async () => {
-    // Clear from team_creation table
-    const { error } = await supabase
-      .from('team_creation')
-      .delete()
-      .in('player_id', selectedPlayers.map(p => p.id));
+  // Update clearAllPlayers
+  const clearAllPlayers = () => {
+    setSelectedPlayers([]);
+    setPromptString('');
+    setCurrentTokenCount(0);
+    setAiResponse('');
+  };
 
-    if (error) {
-      console.error('Error clearing players:', error);
-      return;
+  // Add to useEffect for daily reset
+  useEffect(() => {
+    const resetDaily = () => {
+      const now = new Date();
+      if (now.getHours() === 0 && now.getMinutes() === 0) {
+        setDailyRequestCount(0);
+        setDailyTokenCount(0);
+      }
+    };
+
+    const interval = setInterval(resetDaily, 60000); // Check every minute
+    return () => clearInterval(interval);
+  }, []);
+
+  // Update checkRateLimit
+  const checkRateLimit = () => {
+    const now = Date.now();
+    if (now - lastRequestTime >= RATE_LIMITS.RESET_INTERVAL) {
+      setRequestCount(0);
+      setInputTokens(0);
+      setOutputTokens(0);
     }
 
-    setSelectedPlayers([]);
+    if (requestCount >= RATE_LIMITS.REQUESTS_PER_MINUTE) {
+      throw new Error('Rate limit reached. Please wait a minute before trying again.');
+    }
+    if (dailyRequestCount >= RATE_LIMITS.REQUESTS_PER_DAY) {
+      throw new Error('Daily request limit reached. Please try again tomorrow.');
+    }
+    if (currentTokenCount > RATE_LIMITS.TOKENS_PER_MINUTE) {
+      throw new Error('Token limit reached. Please wait a minute.');
+    }
+    if (dailyTokenCount >= RATE_LIMITS.TOKENS_PER_DAY) {
+      throw new Error('Daily token limit reached. Please try again tomorrow.');
+    }
   };
 
   const generateTeams = async () => {
-    setIsGenerating(true);
     try {
-      // 1. Fetch current team_creation data with only necessary fields
-      const { data: teamData, error: fetchError } = await supabase
-        .from('team_creation')
-        .select(`
-          player_id,
-          speed,
-          throwing,
-          awareness,
-          catching,
-          defense,
-          endurance,
-          spirit,
-          players:players (
-            name
-          )
-        `) as { data: TeamCreationWithPlayer[] | null; error: any };
+      checkRateLimit();
+      setIsGenerating(true);
+      setError(null);
+      setAiResponse('');
 
-      if (fetchError) throw fetchError;
-      
-      if (!teamData || teamData.length === 0) {
-        throw new Error('No players selected');
-      }
+      // Add instructions to the prompt
+      const fullPrompt = `Create two balanced teams from these players:\n\n${promptString}\n\nEnsure teams have similar total ratings.`;
 
-      // 2. Format the data for OpenAI
-      const formattedPlayers = teamData.map(player => ({
-        name: player.players?.name || '',
-        stats: {
-          speed: player.speed,
-          throwing: player.throwing,
-          awareness: player.awareness,
-          catching: player.catching,
-          defense: player.defense,
-          endurance: player.endurance,
-          spirit: player.spirit,
-          overall: Math.round(
-            (player.speed + player.throwing + player.awareness + 
-             player.catching + player.defense + player.endurance) / 6 + 
-            player.spirit
-          )
-        }
-      }));
-
-      // 3. Call our API endpoint with formatted data
       const response = await fetch('/api/generate-teams', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ players: formattedPlayers }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ promptString: fullPrompt })
       });
 
+      const data = await response.json();
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        
-        if (response.status === 503) {
-          throw new Error('AI service is temporarily unavailable. Please try again later.');
-        }
-        
-        throw new Error(errorData.error || 'Failed to generate teams');
+        throw new Error(data.error || 'Failed to generate teams');
       }
 
-      const assignments = await response.json();
-      setTeamAssignments(assignments);
+      // Store and display the response
+      setAiResponse(JSON.stringify(data, null, 2));
+      if (data.teams) {
+        setTeamAssignments(data.teams);
+      }
+
+      // Update rate limiting
+      setRequestCount(prev => prev + 1);
+      setDailyRequestCount(prev => prev + 1);
+      setLastRequestTime(Date.now());
+
     } catch (err) {
       console.error('Error generating teams:', err);
       setError(err instanceof Error ? err.message : 'Failed to generate teams');
@@ -211,45 +258,27 @@ function AIPageContent() {
     }
   };
 
-  // Clear team_creation table on mount
-  useEffect(() => {
-    const clearTeamCreation = async () => {
-      const { error } = await supabase
-        .from('team_creation')
-        .delete()
-        .not('player_id', 'is', null); // Delete all non-null entries
-
-      if (error) {
-        console.error('Error clearing team_creation table:', error);
-      }
-    };
-
-    clearTeamCreation();
-    
-    // Also clear on unmount
-    return () => {
-      clearTeamCreation();
-    };
-  }, [supabase]); // Add supabase to dependencies
-
   return (
     <div className="min-h-screen p-4 sm:p-6">
       <div className="max-w-6xl mx-auto">
         {/* Hero Section */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#fbbc04]/10 mb-6 rotate-6 hover:rotate-0 transition-all duration-300">
-            <Bot className="w-8 h-8 text-[#fbbc04]" />
+        <div className="text-center mb-6 sm:mb-8 px-4">
+          <div className="inline-flex items-center justify-center w-12 sm:w-16 h-12 sm:h-16 
+                          rounded-2xl bg-[#fbbc04]/10 mb-4 sm:mb-6 rotate-6 hover:rotate-0 
+                          transition-all duration-300">
+            <Bot className="w-6 sm:w-8 h-6 sm:h-8 text-[#fbbc04]" />
           </div>
-          <h1 className="text-3xl sm:text-4xl font-medium text-foreground mb-4">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-medium text-foreground mb-3 sm:mb-4">
             FullSend.AI
           </h1>
-          <p className="text-base sm:text-lg text-foreground/60 max-w-2xl mx-auto">
-            Create balanced Ultimate teams using AI-powered matchmaking that considers player ratings and chemistry.
+          <p className="text-sm sm:text-base md:text-lg text-foreground/60 
+                        max-w-2xl mx-auto px-4">
+            Create balanced Ultimate teams using AI-powered matchmaking.
           </p>
         </div>
 
         {/* Features Grid - Updated to be more subtle */}
-        <div className="grid grid-cols-3 gap-3 mb-8 px-1">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6 sm:mb-8 px-4">
           {[
             {
               title: "Smart Balancing",
@@ -300,16 +329,15 @@ function AIPageContent() {
         </div>
 
         {/* Player Selection */}
-        <div className="card-base p-3 sm:p-4">
-          {/* Header with Search */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 mb-6">
+        <div className="card-base p-3 sm:p-4 mx-4">
+          <div className="flex flex-col gap-4 mb-6">
             <div>
               <h2 className="text-lg font-medium mb-1">Select Players</h2>
               <p className="text-xs sm:text-sm text-[#34a853]">
-                Select players in attendance for AI team generation
+                Select players in attendance
               </p>
             </div>
-            <div className="w-full sm:w-80">
+            <div className="w-full">
               <SearchInput 
                 value={searchTerm} 
                 onChange={(value) => setSearchTerm(value)} 
@@ -319,24 +347,44 @@ function AIPageContent() {
 
           {/* Selected Players Counter and Clear All */}
           {selectedPlayers.length > 0 && (
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="h-1.5 w-32 sm:w-48 rounded-full bg-primary/10">
-                    <div 
-                      className="h-full rounded-full bg-primary transition-all"
-                      style={{ width: `${(selectedPlayers.length / 30) * 100}%` }}
-                    />
+            <div className="mb-4 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center 
+                            justify-between gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  {/* Player counter */}
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 w-full sm:w-32 md:w-48 rounded-full bg-primary/10">
+                      <div 
+                        className="h-full rounded-full bg-primary transition-all"
+                        style={{ width: `${(selectedPlayers.length / 30) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-xs font-medium text-primary whitespace-nowrap">
+                      {selectedPlayers.length}/30
+                    </span>
                   </div>
-                  <span className="text-xs font-medium text-primary">
-                    {selectedPlayers.length}/30
-                  </span>
+                  
+                  {/* Token counter */}
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 w-full sm:w-32 md:w-48 rounded-full bg-yellow-100">
+                      <div 
+                        className="h-full rounded-full bg-yellow-400 transition-all"
+                        style={{ 
+                          width: `${(currentTokenCount / RATE_LIMITS.TOKENS_PER_MINUTE) * 100}%` 
+                        }}
+                      />
+                    </div>
+                    <span className="text-xs font-medium text-yellow-600 whitespace-nowrap">
+                      {currentTokenCount.toLocaleString()} tokens
+                    </span>
+                  </div>
                 </div>
+                
                 <button
                   onClick={clearAllPlayers}
                   className="text-xs font-medium text-red-500 hover:text-red-600 
                            px-3 py-1.5 rounded-lg hover:bg-red-50 
-                           transition-colors duration-200"
+                           transition-colors duration-200 whitespace-nowrap"
                 >
                   Clear All
                 </button>
@@ -350,10 +398,10 @@ function AIPageContent() {
                     className="flex items-center gap-1.5 px-2 py-1 rounded-full 
                              bg-primary/[0.04] border border-primary/10 text-xs"
                   >
-                    <span>{player.name}</span>
+                    <span className="truncate max-w-[150px]">{player.name}</span>
                     <button
                       onClick={() => removePlayer(player.id)}
-                      className="text-foreground/40 hover:text-foreground/60 p-0.5"
+                      className="text-foreground/40 hover:text-foreground/60 p-0.5 flex-shrink-0"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -364,7 +412,7 @@ function AIPageContent() {
           )}
 
           {/* Player List */}
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {filteredPlayers.map(player => {
               const isSelected = selectedPlayers.some(p => p.id === player.id);
               const rating = calculateOverallRating(player);
@@ -440,10 +488,15 @@ function AIPageContent() {
               )}
               <button
                 onClick={() => {
-                  setError(null); // Clear any previous errors
+                  setError(null);
                   generateTeams();
                 }}
-                disabled={isGenerating}
+                disabled={
+                  isGenerating || 
+                  requestCount >= RATE_LIMITS.REQUESTS_PER_MINUTE ||
+                  dailyRequestCount >= RATE_LIMITS.REQUESTS_PER_DAY ||
+                  currentTokenCount > RATE_LIMITS.TOKENS_PER_MINUTE
+                }
                 className="button-primary px-8 py-3 text-base disabled:opacity-50"
               >
                 {isGenerating ? (
@@ -460,6 +513,13 @@ function AIPageContent() {
                   </>
                 )}
               </button>
+              <RateLimiter 
+                isGenerating={isGenerating}
+                requestCount={requestCount}
+                dailyRequestCount={dailyRequestCount}
+                currentTokenCount={currentTokenCount}
+                dailyTokenCount={dailyTokenCount}
+              />
               <div className="mt-2 text-xs text-foreground/60">
                 Teams will be balanced based on player ratings and chemistry
               </div>
@@ -473,90 +533,61 @@ function AIPageContent() {
           )}
         </div>
 
-        {/* Team Assignments Display */}
-        {teamAssignments.length > 0 && (
-          <div className="mt-8 grid gap-6 sm:grid-cols-2">
-            {/* Team 1 */}
-            <div className="card-base p-4">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                  <Users className="w-5 h-5 text-blue-500" />
+        {/* Response Section */}
+        <div className="mt-8 space-y-6">
+          {/* Prompt Preview */}
+          {promptString && (
+            <div className="mx-4 p-4 sm:p-6 rounded-xl bg-white border border-gray-200 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Bot className="w-4 h-4 text-gray-500" />
+                  <h3 className="text-sm font-medium text-gray-700">Prompt Preview</h3>
                 </div>
-                <div>
-                  <h3 className="font-medium text-blue-500">Team 1</h3>
-                  <div className="text-xs text-foreground/60">
-                    Average Rating: {
-                      Math.round(
-                        teamAssignments
-                          .filter(p => p.team === 1)
-                          .reduce((sum, p) => sum + p.overall_rating, 0) /
-                        teamAssignments.filter(p => p.team === 1).length
-                      )
-                    }
-                  </div>
-                </div>
+                <span className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-600 font-medium">
+                  {currentTokenCount} tokens
+                </span>
               </div>
-              <div className="space-y-2">
-                {teamAssignments
-                  .filter(p => p.team === 1)
-                  .map(player => (
-                    <div 
-                      key={player.player_name}
-                      className="flex items-center justify-between p-2 rounded-lg bg-secondary/20"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="text-sm font-medium">{player.player_name}</div>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500">
-                          {player.role}
-                        </span>
-                      </div>
-                      <div className="text-sm font-medium">{player.overall_rating}</div>
-                    </div>
-                  ))}
+              <div className="relative">
+                <pre className="text-xs sm:text-sm text-gray-600 overflow-auto max-h-48 p-3 bg-gray-50 rounded-lg">
+                  {promptString}
+                </pre>
+                <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white to-transparent pointer-events-none" />
               </div>
             </div>
+          )}
 
-            {/* Team 2 */}
-            <div className="card-base p-4">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                  <Users className="w-5 h-5 text-green-500" />
+          {/* AI Response */}
+          {aiResponse && (
+            <div className="mx-4 space-y-4">
+              {/* Teams Display */}
+              <div className="p-4 sm:p-6 rounded-xl bg-white border border-gray-200 shadow-sm">
+                <div className="flex items-center gap-2 mb-4">
+                  <Users className="w-4 h-4 text-green-500" />
+                  <h3 className="text-sm font-medium text-gray-700">Generated Teams</h3>
                 </div>
-                <div>
-                  <h3 className="font-medium text-green-500">Team 2</h3>
-                  <div className="text-xs text-foreground/60">
-                    Average Rating: {
-                      Math.round(
-                        teamAssignments
-                          .filter(p => p.team === 2)
-                          .reduce((sum, p) => sum + p.overall_rating, 0) /
-                        teamAssignments.filter(p => p.team === 2).length
-                      )
-                    }
+                <JsonViewer 
+                  data={typeof aiResponse === 'string' ? JSON.parse(aiResponse) : { teams: [] }} 
+                />
+              </div>
+
+              {/* Raw JSON */}
+              <div className="p-4 sm:p-6 rounded-xl bg-white border border-gray-200 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Code className="w-4 h-4 text-gray-500" />
+                    <h3 className="text-sm font-medium text-gray-700">Raw JSON Response</h3>
                   </div>
                 </div>
-              </div>
-              <div className="space-y-2">
-                {teamAssignments
-                  .filter(p => p.team === 2)
-                  .map(player => (
-                    <div 
-                      key={player.player_name}
-                      className="flex items-center justify-between p-2 rounded-lg bg-secondary/20"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="text-sm font-medium">{player.player_name}</div>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-500">
-                          {player.role}
-                        </span>
-                      </div>
-                      <div className="text-sm font-medium">{player.overall_rating}</div>
-                    </div>
-                  ))}
+                <div className="relative">
+                  <pre className="text-xs sm:text-sm text-gray-600 overflow-auto max-h-48 p-3 bg-gray-50 rounded-lg">
+                    {aiResponse}
+                  </pre>
+                  <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
