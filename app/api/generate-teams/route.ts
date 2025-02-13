@@ -61,19 +61,33 @@ export async function POST(req: Request) {
   try {
     const { promptString } = await req.json();
 
+    if (!promptString) {
+      throw new Error('No players provided');
+    }
+
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         { 
           role: "system", 
-          content: `You are a team formation expert. Create two balanced Ultimate Frisbee teams following these rules:
-1. Only use players from the provided list
-2. Each player can only be assigned to one team
-3. Teams must have equal numbers of players when possible
-4. Balance throwing skills across teams (players with high throwing ratings)
-5. Balance catching skills across teams (players with high catching ratings)
-6. Consider overall player ratings for final team balance
-7. Return a JSON response with teams array containing player_name, team (1 or 2), and overall_rating`
+          content: `You are a team formation expert. Analyze the provided players and their attributes to create two balanced teams.
+Rules:
+- Only use players from the input list (no duplicates or new players)
+- Create teams based on overall ratings and individual skills
+- Balance throwing and catching abilities across teams
+- It's okay to have uneven teams if the total player count is odd
+- Focus on creating competitive matchups
+
+Return a JSON response with this structure:
+{
+  "teams": [
+    {
+      "player_name": string,
+      "team": 1 or 2,
+      "overall_rating": number
+    }
+  ]
+}`
         },
         {
           role: "user",
@@ -88,20 +102,13 @@ export async function POST(req: Request) {
       throw new Error('No response from OpenAI');
     }
 
-    // Parse and validate response
+    // Validate response
     const teams = JSON.parse(content);
     const playerNames = teams.teams.map((p: any) => p.player_name);
     
     // Check for duplicates
     if (new Set(playerNames).size !== playerNames.length) {
       throw new Error('Response contains duplicate players');
-    }
-
-    // Validate team sizes
-    const team1Count = teams.teams.filter((p: any) => p.team === 1).length;
-    const team2Count = teams.teams.filter((p: any) => p.team === 2).length;
-    if (Math.abs(team1Count - team2Count) > 1) {
-      throw new Error('Teams are not properly balanced');
     }
 
     return NextResponse.json(teams);

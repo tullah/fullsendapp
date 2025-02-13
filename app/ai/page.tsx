@@ -224,19 +224,31 @@ function AIPageContent() {
       setError(null);
       setAiResponse('');
 
-      // Add instructions to the prompt
-      const fullPrompt = `Create two balanced teams from these players:\n\n${promptString}\n\nEnsure teams have similar total ratings.`;
+      // Format the prompt with selected players
+      const formattedPrompt = `Create balanced teams from these players:
+
+${promptString}
+
+Consider their attributes when forming teams. Ensure teams are competitive based on overall ratings and skill distribution.`;
 
       const response = await fetch('/api/generate-teams', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ promptString: fullPrompt })
+        body: JSON.stringify({ promptString: formattedPrompt })
       });
 
       const data = await response.json();
       
       if (!response.ok) {
         throw new Error(data.error || 'Failed to generate teams');
+      }
+
+      // Validate that all selected players are included
+      const responsePlayerNames = new Set(data.teams.map((p: any) => p.player_name));
+      const selectedPlayerNames = new Set(selectedPlayers.map(p => p.name));
+
+      if (responsePlayerNames.size !== selectedPlayerNames.size) {
+        throw new Error('Response is missing some selected players');
       }
 
       // Store and display the response
