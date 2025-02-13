@@ -222,10 +222,9 @@ export function AddPlayerDialog({ onPlayerAdded, onClose, isOpen }: AddPlayerDia
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-1 sm:p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md h-[calc(100vh-2rem)] sm:h-auto sm:max-h-[calc(100vh-2rem)] 
-                    flex flex-col">
-        {/* Header - Fixed */}
-        <div className="flex-shrink-0 flex items-center justify-between px-3 py-2 sm:px-5 sm:py-4 border-b">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-3 py-2 sm:px-5 sm:py-4 border-b">
           <h2 className="text-sm sm:text-lg font-semibold text-foreground">Add Player</h2>
           <button
             onClick={onClose}
@@ -236,10 +235,9 @@ export function AddPlayerDialog({ onPlayerAdded, onClose, isOpen }: AddPlayerDia
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-          {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-3 sm:p-5 space-y-4">
+        <form onSubmit={handleSubmit}>
+          <div className="max-h-[calc(90vh-8rem)] overflow-y-auto">
+            <div className="p-3 sm:p-5 space-y-3 sm:space-y-4">
               {error && (
                 <div className="flex items-start gap-2.5 p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">
                   <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
@@ -437,9 +435,8 @@ export function AddPlayerDialog({ onPlayerAdded, onClose, isOpen }: AddPlayerDia
             </div>
           </div>
 
-          {/* Footer - Fixed */}
-          <div className="flex-shrink-0 flex justify-end gap-2 px-3 py-2 sm:px-5 sm:py-4 border-t bg-white 
-                       shadow-[0_-1px_3px_rgba(0,0,0,0.05)]">
+          {/* Footer */}
+          <div className="flex justify-end gap-2 px-3 py-2 sm:px-5 sm:py-4 border-t bg-gray-50">
             <button
               type="button"
               onClick={onClose}

@@ -12,21 +12,50 @@ export function RatingSystem() {
   } as const;
 
   return (
-    <div className="card-base p-5 sm:p-6">
-      {/* Centered Rating System Header */}
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-medium text-foreground mb-2">Rating System</h2>
+    <div className="card-base p-4 sm:p-6">
+      {/* Header */}
+      <div className="text-center mb-6 sm:mb-8">
+        <h2 className="text-xl sm:text-2xl font-medium text-foreground mb-2">Rating System</h2>
         <p className="text-sm sm:text-base text-foreground/60 max-w-2xl mx-auto">
-          Our comprehensive player rating system evaluates multiple skills and rewards good sportsmanship.
+          A skill-based rating system that rewards both performance and sportsmanship.
         </p>
       </div>
 
-      {/* Player Stats and Spirit - Single Column */}
-      <div className="space-y-10">
+      <div className="space-y-8 sm:space-y-10">
         {/* Player Stats */}
         <div>
-          <h3 className="text-lg font-medium text-foreground mb-5 text-center">Player Stats</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+          <h3 className="text-lg font-medium text-foreground mb-4 sm:mb-5 text-center">Player Stats</h3>
+          
+          {/* Rating Scale */}
+          <div className="mb-6 px-2 sm:px-4">
+            {/* Numbers - Now in a grid to match the sections below */}
+            <div className="grid grid-cols-5 text-center gap-1 mb-2">
+              <div className="text-[10px] sm:text-xs text-foreground/60">1-20</div>
+              <div className="text-[10px] sm:text-xs text-foreground/60">21-40</div>
+              <div className="text-[10px] sm:text-xs text-foreground/60">41-60</div>
+              <div className="text-[10px] sm:text-xs text-foreground/60">61-80</div>
+              <div className="text-[10px] sm:text-xs text-foreground/60">81-99</div>
+            </div>
+            {/* Scale Bar */}
+            <div className="h-2 rounded-full bg-gray-100 flex">
+              <div className="w-1/5 h-full rounded-l-full" style={{ backgroundColor: ratingConfig.beginner.color }}></div>
+              <div className="w-1/5 h-full" style={{ backgroundColor: ratingConfig.developing.color }}></div>
+              <div className="w-1/5 h-full" style={{ backgroundColor: ratingConfig.competitive.color }}></div>
+              <div className="w-1/5 h-full" style={{ backgroundColor: ratingConfig.expert.color }}></div>
+              <div className="w-1/5 h-full rounded-r-full" style={{ backgroundColor: ratingConfig.worldClass.color }}></div>
+            </div>
+            {/* Labels */}
+            <div className="grid grid-cols-5 text-center gap-1 mt-2">
+              <span className="text-[10px] sm:text-xs font-medium truncate" style={{ color: ratingConfig.beginner.color }}>Beginner</span>
+              <span className="text-[10px] sm:text-xs font-medium truncate" style={{ color: ratingConfig.developing.color }}>Developing</span>
+              <span className="text-[10px] sm:text-xs font-medium truncate" style={{ color: ratingConfig.competitive.color }}>Competitive</span>
+              <span className="text-[10px] sm:text-xs font-medium truncate" style={{ color: ratingConfig.expert.color }}>Expert</span>
+              <span className="text-[10px] sm:text-xs font-medium truncate" style={{ color: ratingConfig.worldClass.color }}>World Class</span>
+            </div>
+          </div>
+
+          {/* Stat Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
             {[
               { 
                 label: 'Speed',
@@ -34,9 +63,6 @@ export function RatingSystem() {
                 shortDesc: 'Speed and agility in game',
                 icon: '🏃',
                 color: ratingColors.beginner,
-                level: 'Beginner',
-                progress: 1,
-                range: '1-20'
               },
               { 
                 label: 'Throwing Accuracy',
@@ -44,9 +70,6 @@ export function RatingSystem() {
                 shortDesc: 'Throw control and accuracy',
                 icon: '🎯',
                 color: ratingColors.intermediate,
-                level: 'Intermediate',
-                progress: 2,
-                range: '21-40'
               },
               { 
                 label: 'Field Awareness',
@@ -54,9 +77,6 @@ export function RatingSystem() {
                 shortDesc: 'Game IQ and positioning',
                 icon: '👁️',
                 color: ratingColors.advanced,
-                level: 'Advanced',
-                progress: 3,
-                range: '41-60'
               },
               { 
                 label: 'Catching Ability',
@@ -64,9 +84,6 @@ export function RatingSystem() {
                 shortDesc: 'Catch success rate',
                 icon: '🤲',
                 color: ratingColors.expert,
-                level: 'Expert',
-                progress: 4,
-                range: '61-80'
               },
               { 
                 label: 'Defense Skills',
@@ -74,9 +91,6 @@ export function RatingSystem() {
                 shortDesc: 'Defensive effectiveness',
                 icon: '🛡️',
                 color: ratingColors.elite,
-                level: 'Elite',
-                progress: 5,
-                range: '81-99'
               },
               { 
                 label: 'Endurance',
@@ -84,9 +98,6 @@ export function RatingSystem() {
                 shortDesc: 'Stamina and recovery',
                 icon: '⚡',
                 color: ratingColors.advanced,
-                level: 'Advanced',
-                progress: 3,
-                range: '41-60'
               },
             ].map((stat, i) => (
               <div 
@@ -95,11 +106,10 @@ export function RatingSystem() {
                          hover:border-[#1a73e8]/10 hover:shadow-sm transition-all duration-300"
                 style={{ backgroundColor: `${stat.color}05` }}
               >
-                {/* Card Header */}
-                <div className="p-3 sm:p-4">
-                  <div className="flex items-center gap-2 mb-1">
+                <div className="p-4">
+                  <div className="flex items-start gap-3">
                     <div 
-                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-base sm:text-lg
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-lg
                                group-hover:scale-110 transition-transform duration-300"
                       style={{ 
                         backgroundColor: `${stat.color}15`,
@@ -109,8 +119,8 @@ export function RatingSystem() {
                       {stat.icon}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-foreground truncate">{stat.label}</div>
-                      <div className="text-xs text-foreground/60 truncate">{stat.shortDesc}</div>
+                      <div className="text-sm font-medium text-foreground">{stat.label}</div>
+                      <div className="text-xs text-foreground/60 mt-0.5">{stat.shortDesc}</div>
                     </div>
                   </div>
                 </div>
@@ -121,13 +131,12 @@ export function RatingSystem() {
 
         {/* Spirit System */}
         <div>
-          <h3 className="text-lg font-medium text-foreground mb-5 text-center">Spirit System</h3>
-          <p className="text-sm text-center text-foreground/60 mb-6 max-w-2xl mx-auto">
+          <h3 className="text-lg font-medium text-foreground mb-4 sm:mb-5 text-center">Spirit System</h3>
+          <p className="text-sm text-center text-foreground/60 mb-5 max-w-2xl mx-auto">
             Players earn spirit points through good sportsmanship and fair play, directly boosting their overall rating.
           </p>
 
-          {/* Spirit Levels Grid */}
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {[
               { level: 'Inspiring', score: 4, desc: 'Embodies the highest spirit; fosters a fun, respectful environment' },
               { level: 'Supportive', score: 3, desc: 'Encourages fair play, mediates conflicts positively' },
@@ -137,7 +146,7 @@ export function RatingSystem() {
             ].map((spirit, i) => (
               <div 
                 key={i} 
-                className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary/20 transition-colors"
+                className="flex items-start gap-3 p-4 rounded-lg hover:bg-secondary/20 transition-colors"
               >
                 <div className="flex-shrink-0">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center 
@@ -151,7 +160,7 @@ export function RatingSystem() {
                   </div>
                 </div>
                 <div>
-                  <div className="font-medium text-sm text-foreground mb-0.5">{spirit.level}</div>
+                  <div className="font-medium text-sm text-foreground mb-1">{spirit.level}</div>
                   <div className="text-xs text-foreground/60 leading-relaxed">{spirit.desc}</div>
                 </div>
               </div>
