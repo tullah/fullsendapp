@@ -2,9 +2,14 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useDebounce } from "usehooks-ts";
-import { useState, useEffect } from "react";
+import { useState, useEffect, ChangeEvent } from "react";
 
-export function SearchInput() {
+interface SearchInputProps {
+  value: string;
+  onChange: (value: string) => void;
+}
+
+export function SearchInput({ value, onChange }: SearchInputProps) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
@@ -21,13 +26,18 @@ export function SearchInput() {
     replace(`${pathname}?${params.toString()}`);
   }, [debouncedTerm, pathname, replace, searchParams]);
 
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setTerm(e.target.value);
+    onChange(e.target.value);
+  };
+
   return (
     <div className="relative w-full sm:w-[200px]">
       <input
         type="text"
         placeholder="🔍 Search players..."
         value={term}
-        onChange={(e) => setTerm(e.target.value)}
+        onChange={handleChange}
         className="input-base"
       />
     </div>

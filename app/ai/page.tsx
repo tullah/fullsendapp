@@ -194,7 +194,10 @@ export default function AIPage() {
                 </button>
               )}
             </div>
-            <SearchInput value={searchTerm} onChange={setSearchTerm} />
+            <SearchInput 
+              value={searchTerm} 
+              onChange={(value) => setSearchTerm(value)} 
+            />
           </div>
 
           {/* Selected Players Counter */}
