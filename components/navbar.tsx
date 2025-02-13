@@ -9,7 +9,7 @@ import { useState } from "react";
 const navItems = [
   { label: "Home", href: "/" },
   { label: "Players", href: "/players" },
-  { label: "Disputes Review", href: "/admin/disputes" },
+  { label: "Review Disputes", href: "/admin/disputes" },
 ];
 
 export function Navbar() {
@@ -42,7 +42,7 @@ export function Navbar() {
               href="/admin/disputes"
               className="text-sm font-medium text-foreground/60 hover:text-primary transition-colors"
             >
-              Disputes Review
+              Review Disputes
             </Link>
           </div>
         </div>
